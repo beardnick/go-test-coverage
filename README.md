@@ -22,3 +22,4 @@ go run ./cmd/beautiful-coverage -profile coverage.out -out coverage.html
 - `-out`: output HTML file (default `coverage.html`).
 - `-root`: root directory used to resolve source file paths (default `.`).
 - `-title`: report title (default `Go Coverage Report`).
+- `-assets`: directory name or path to write local CSS/JS assets (default `assets`).

@@ -13,19 +13,22 @@ const reportTemplate = `<!doctype html>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>{{.Title}}</title>
+  <link rel="stylesheet" href="{{.AssetsPath}}/highlight/github-dark.min.css" media="(prefers-color-scheme: dark)">
+  <link rel="stylesheet" href="{{.AssetsPath}}/highlight/github.min.css" media="(prefers-color-scheme: light)">
   <style>
     :root {
       color-scheme: dark;
-      --bg: #0b1120;
-      --panel: #0f172a;
-      --panel-border: #1f2937;
-      --text: #e5e7eb;
-      --muted: #94a3b8;
-      --accent: #38bdf8;
-      --covered: #22c55e;
-      --missed: #ef4444;
-      --partial: #f59e0b;
-      --not-tracked: #475569;
+      --bg: #1f2937;
+      --panel: #273449;
+      --panel-border: #3b4758;
+      --text: #e2e8f0;
+      --muted: #b0bac6;
+      --accent: #58a6ff;
+      --covered: #3fb950;
+      --missed: #f85149;
+      --partial: #d29922;
+      --not-tracked: #6e7681;
+      --code-bg: #1b2330;
     }
 
     * {
@@ -34,18 +37,24 @@ const reportTemplate = `<!doctype html>
 
     body {
       margin: 0;
-      font-family: "Inter", "Segoe UI", system-ui, sans-serif;
-      background: radial-gradient(circle at top, #1f2937 0%, #0b1120 55%);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans", Helvetica, Arial, sans-serif;
+      font-size: 14px;
+      line-height: 1.5;
+      background: var(--bg);
       color: var(--text);
     }
 
     a {
-      color: inherit;
+      color: var(--accent);
       text-decoration: none;
     }
 
+    a:hover {
+      text-decoration: underline;
+    }
+
     .container {
-      max-width: 1200px;
+      max-width: 1140px;
       margin: 0 auto;
       padding: 32px 24px 64px;
     }
@@ -61,8 +70,9 @@ const reportTemplate = `<!doctype html>
 
     .page-header h1 {
       margin: 0;
-      font-size: 32px;
-      letter-spacing: -0.02em;
+      font-size: 26px;
+      font-weight: 600;
+      letter-spacing: -0.01em;
     }
 
     .page-header p {
@@ -74,10 +84,10 @@ const reportTemplate = `<!doctype html>
       display: flex;
       flex-wrap: wrap;
       gap: 16px;
-      background: rgba(15, 23, 42, 0.65);
+      background: var(--panel);
       border: 1px solid var(--panel-border);
       padding: 12px 16px;
-      border-radius: 16px;
+      border-radius: 8px;
     }
 
     .summary-item {
@@ -95,7 +105,7 @@ const reportTemplate = `<!doctype html>
     }
 
     .summary-item .value {
-      font-size: 20px;
+      font-size: 18px;
       font-weight: 600;
     }
 
@@ -110,29 +120,28 @@ const reportTemplate = `<!doctype html>
       background: var(--panel);
       border: 1px solid var(--panel-border);
       padding: 16px;
-      border-radius: 16px;
+      border-radius: 8px;
       display: flex;
       flex-direction: column;
-      gap: 12px;
-      box-shadow: 0 18px 38px rgba(15, 23, 42, 0.4);
+      gap: 10px;
     }
 
     .card .label {
       color: var(--muted);
-      font-size: 12px;
+      font-size: 11px;
       letter-spacing: 0.08em;
       text-transform: uppercase;
     }
 
     .card .value {
-      font-size: 28px;
+      font-size: 24px;
       font-weight: 600;
     }
 
     .progress {
       width: 100%;
-      height: 8px;
-      background: #1f2937;
+      height: 6px;
+      background: #334155;
       border-radius: 999px;
       overflow: hidden;
     }
@@ -159,15 +168,15 @@ const reportTemplate = `<!doctype html>
     }
 
     .bar.high {
-      background: linear-gradient(90deg, #22c55e, #16a34a);
+      background: var(--covered);
     }
 
     .bar.medium {
-      background: linear-gradient(90deg, #f59e0b, #f97316);
+      background: var(--partial);
     }
 
     .bar.low {
-      background: linear-gradient(90deg, #f97316, #ef4444);
+      background: var(--missed);
     }
 
     .bar.none {
@@ -176,10 +185,11 @@ const reportTemplate = `<!doctype html>
 
     .file-table {
       width: 100%;
-      border-collapse: collapse;
+      border-collapse: separate;
+      border-spacing: 0;
       margin-bottom: 32px;
       background: var(--panel);
-      border-radius: 16px;
+      border-radius: 8px;
       overflow: hidden;
       border: 1px solid var(--panel-border);
     }
@@ -187,19 +197,20 @@ const reportTemplate = `<!doctype html>
     .file-table th,
     .file-table td {
       text-align: left;
-      padding: 12px 16px;
+      padding: 10px 16px;
     }
 
     .file-table th {
-      font-size: 12px;
+      font-size: 11px;
       color: var(--muted);
       text-transform: uppercase;
       letter-spacing: 0.08em;
-      background: #0b1224;
+      background: #273449;
+      border-bottom: 1px solid var(--panel-border);
     }
 
     .file-table tr + tr td {
-      border-top: 1px solid #1f2937;
+      border-top: 1px solid var(--panel-border);
     }
 
     .file-name {
@@ -207,9 +218,9 @@ const reportTemplate = `<!doctype html>
     }
 
     .viewer {
-      background: rgba(15, 23, 42, 0.65);
+      background: var(--panel);
       border: 1px solid var(--panel-border);
-      border-radius: 20px;
+      border-radius: 8px;
       overflow: hidden;
     }
 
@@ -218,8 +229,8 @@ const reportTemplate = `<!doctype html>
       flex-wrap: wrap;
       gap: 16px;
       align-items: center;
-      padding: 16px 20px;
-      background: rgba(11, 18, 36, 0.9);
+      padding: 12px 16px;
+      background: #273449;
       border-bottom: 1px solid var(--panel-border);
       position: sticky;
       top: 0;
@@ -241,48 +252,54 @@ const reportTemplate = `<!doctype html>
     }
 
     .file-picker select {
-      background: #0f172a;
+      background: #1b2330;
       color: var(--text);
-      border: 1px solid #1f2937;
-      padding: 8px 10px;
-      border-radius: 10px;
-      font-size: 14px;
+      border: 1px solid var(--panel-border);
+      padding: 6px 10px;
+      border-radius: 6px;
+      font-size: 13px;
+    }
+
+    .file-picker select:focus {
+      outline: 2px solid var(--accent);
+      outline-offset: 1px;
     }
 
     .legend {
       display: flex;
       flex-wrap: wrap;
-      gap: 10px;
+      gap: 8px;
       align-items: center;
     }
 
     .legend-item {
-      padding: 4px 10px;
+      padding: 2px 10px;
       border-radius: 999px;
       font-size: 12px;
       font-weight: 600;
-      background: rgba(148, 163, 184, 0.14);
+      border: 1px solid var(--panel-border);
       color: var(--muted);
+      background: transparent;
     }
 
     .legend-item.not-tracked {
-      background: rgba(148, 163, 184, 0.18);
-      color: #cbd5f5;
+      border-color: rgba(110, 118, 129, 0.6);
+      color: #c9d1d9;
     }
 
     .legend-item.missed {
-      background: rgba(239, 68, 68, 0.18);
-      color: #fecaca;
+      border-color: rgba(248, 81, 73, 0.6);
+      color: #fca5a5;
     }
 
     .legend-item.partial {
-      background: rgba(245, 158, 11, 0.18);
-      color: #fde68a;
+      border-color: rgba(210, 153, 34, 0.7);
+      color: #f5d481;
     }
 
     .legend-item.covered {
-      background: rgba(34, 197, 94, 0.18);
-      color: #bbf7d0;
+      border-color: rgba(63, 185, 80, 0.7);
+      color: #7ee787;
     }
 
     .filters {
@@ -306,13 +323,13 @@ const reportTemplate = `<!doctype html>
     }
 
     .viewer-body {
-      padding: 0 20px 20px;
+      padding: 0 16px 16px;
     }
 
     .file-section {
       display: none;
       margin-bottom: 24px;
-      padding: 20px 0 8px;
+      padding: 16px 0 8px;
     }
 
     .file-section.active {
@@ -330,59 +347,67 @@ const reportTemplate = `<!doctype html>
 
     .file-header h2 {
       margin: 0;
-      font-size: 18px;
+      font-size: 14px;
+      font-weight: 600;
       word-break: break-all;
     }
 
     .pill {
-      padding: 4px 10px;
+      padding: 2px 10px;
       border-radius: 999px;
-      font-size: 13px;
+      font-size: 12px;
       font-weight: 600;
-      background: rgba(148, 163, 184, 0.2);
+      border: 1px solid transparent;
     }
 
     .pill.high {
-      background: rgba(34, 197, 94, 0.15);
+      background: rgba(63, 185, 80, 0.15);
       color: var(--covered);
+      border-color: rgba(63, 185, 80, 0.4);
     }
 
     .pill.medium {
-      background: rgba(245, 158, 11, 0.15);
+      background: rgba(210, 153, 34, 0.15);
       color: var(--partial);
+      border-color: rgba(210, 153, 34, 0.4);
     }
 
     .pill.low {
-      background: rgba(239, 68, 68, 0.15);
+      background: rgba(248, 81, 73, 0.15);
       color: var(--missed);
+      border-color: rgba(248, 81, 73, 0.4);
     }
 
     .pill.none {
-      background: rgba(148, 163, 184, 0.1);
+      background: rgba(110, 118, 129, 0.12);
       color: var(--muted);
+      border-color: rgba(110, 118, 129, 0.4);
     }
 
     .code-table {
       width: 100%;
       border-collapse: collapse;
-      font-family: "Fira Code", "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
-      font-size: 13px;
-      margin-top: 16px;
-      border-radius: 12px;
+      font-family: SFMono-Regular, Consolas, "Liberation Mono", Menlo, monospace;
+      font-size: 12.5px;
+      margin-top: 12px;
+      border-radius: 6px;
       overflow: hidden;
-      background: #0b1224;
+      background: var(--code-bg);
+      border: 1px solid var(--panel-border);
     }
 
     .code-table td {
-      padding: 2px 12px;
+      padding: 0 12px;
       vertical-align: top;
+      line-height: 20px;
     }
 
     .code-table .line-no {
       width: 60px;
       text-align: right;
       color: var(--muted);
-      border-right: 1px solid #1e293b;
+      border-right: 1px solid var(--panel-border);
+      background: #1b2330;
       user-select: none;
     }
 
@@ -390,24 +415,30 @@ const reportTemplate = `<!doctype html>
       white-space: pre;
     }
 
+    .code-table .code code.hljs {
+      display: block;
+      padding: 0;
+      background: transparent;
+    }
+
     .code-table tr.covered td.code {
-      background: rgba(34, 197, 94, 0.18);
+      background: rgba(63, 185, 80, 0.16);
     }
 
     .code-table tr.missed td.code {
-      background: rgba(239, 68, 68, 0.2);
+      background: rgba(248, 81, 73, 0.16);
     }
 
     .code-table tr.partial td.code {
-      background: rgba(245, 158, 11, 0.2);
+      background: rgba(210, 153, 34, 0.16);
     }
 
     .code-table tr.not-tracked td.code {
-      background: rgba(51, 65, 85, 0.3);
+      background: rgba(110, 118, 129, 0.08);
     }
 
     .code-table tr.covered .line-no {
-      color: #86efac;
+      color: #7ee787;
     }
 
     .code-table tr.missed .line-no {
@@ -415,14 +446,15 @@ const reportTemplate = `<!doctype html>
     }
 
     .code-table tr.partial .line-no {
-      color: #fde68a;
+      color: #f5d481;
     }
 
     .missing {
       padding: 12px;
-      border-radius: 12px;
-      background: rgba(248, 113, 113, 0.12);
-      color: #fecaca;
+      border-radius: 6px;
+      background: rgba(248, 81, 73, 0.08);
+      color: #fca5a5;
+      border: 1px solid rgba(248, 81, 73, 0.35);
       margin-top: 12px;
     }
 
@@ -557,7 +589,7 @@ const reportTemplate = `<!doctype html>
               {{range .Lines}}
               <tr class="{{.Class}}">
                 <td class="line-no">{{.Number}}</td>
-                <td class="code"><code>{{.Code}}</code></td>
+                <td class="code"><code class="hljs language-go">{{.Code}}</code></td>
               </tr>
               {{end}}
             </tbody>
@@ -570,10 +602,19 @@ const reportTemplate = `<!doctype html>
 
     <div class="footer">Generated by beautiful-coverage.</div>
   </div>
+  <script src="{{.AssetsPath}}/highlight/highlight.min.js"></script>
+  <script src="{{.AssetsPath}}/highlight/go.min.js"></script>
   <script>
     const select = document.getElementById('file-select');
     const sections = Array.from(document.querySelectorAll('.file-section'));
     const filters = document.querySelectorAll('[data-filter]');
+    const codeBlocks = document.querySelectorAll('.code-table code');
+
+    if (window.hljs) {
+      codeBlocks.forEach((block) => {
+        hljs.highlightElement(block);
+      });
+    }
 
     function hasSection(anchor) {
       return sections.some((section) => section.id === anchor);
