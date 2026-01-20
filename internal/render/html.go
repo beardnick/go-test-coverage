@@ -53,10 +53,166 @@ const reportTemplate = `<!doctype html>
       text-decoration: underline;
     }
 
+    .app {
+      display: flex;
+      min-height: 100vh;
+      background: var(--bg);
+    }
+
+    .sidebar {
+      width: 280px;
+      background: #1b2330;
+      border-right: 1px solid var(--panel-border);
+      display: flex;
+      flex-direction: column;
+    }
+
+    .sidebar-header {
+      padding: 16px 18px 12px;
+      font-size: 12px;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--muted);
+      border-bottom: 1px solid var(--panel-border);
+    }
+
+    .file-tree {
+      list-style: none;
+      margin: 0;
+      padding: 8px 0;
+      overflow: auto;
+      flex: 1;
+    }
+
+    .file-node {
+      margin: 0;
+      padding: 0;
+    }
+
+    .tree-dir details {
+      padding: 0;
+    }
+
+    .tree-dir summary {
+      list-style: none;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 16px 6px 12px;
+      cursor: pointer;
+      color: var(--muted);
+      font-size: 12px;
+      user-select: none;
+    }
+
+    .tree-dir summary::-webkit-details-marker {
+      display: none;
+    }
+
+    .tree-arrow {
+      display: inline-flex;
+      width: 12px;
+      height: 12px;
+      align-items: center;
+      justify-content: center;
+      transition: transform 0.2s ease;
+      color: var(--muted);
+    }
+
+    .tree-arrow::before {
+      content: '▸';
+      font-size: 12px;
+    }
+
+    .tree-dir details[open] .tree-arrow {
+      transform: rotate(90deg);
+    }
+
+    .tree-label {
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      flex: 1;
+    }
+
+    .tree-children {
+      list-style: none;
+      margin: 0;
+      padding: 0 0 0 14px;
+    }
+
+    .file-node button {
+      width: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      padding: 6px 16px 6px 22px;
+      background: transparent;
+      border: none;
+      color: var(--text);
+      cursor: pointer;
+      text-align: left;
+      border-left: 3px solid transparent;
+      font-family: inherit;
+      font-size: 13px;
+    }
+
+    .file-node button:hover {
+      background: rgba(88, 166, 255, 0.08);
+    }
+
+    .file-node.active button {
+      background: rgba(88, 166, 255, 0.15);
+      border-left-color: var(--accent);
+    }
+
+    .file-label {
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      flex: 1;
+    }
+
+    .file-coverage {
+      font-size: 11px;
+      font-weight: 600;
+      padding: 2px 8px;
+      border-radius: 999px;
+      border: 1px solid var(--panel-border);
+      color: var(--muted);
+      white-space: nowrap;
+    }
+
+    .file-coverage.high {
+      color: var(--covered);
+      border-color: rgba(63, 185, 80, 0.5);
+    }
+
+    .file-coverage.medium {
+      color: var(--partial);
+      border-color: rgba(210, 153, 34, 0.5);
+    }
+
+    .file-coverage.low {
+      color: var(--missed);
+      border-color: rgba(248, 81, 73, 0.5);
+    }
+
+    .file-coverage.none {
+      color: var(--muted);
+      border-color: rgba(110, 118, 129, 0.5);
+    }
+
+    .main {
+      flex: 1;
+      min-width: 0;
+    }
+
     .container {
-      max-width: 1140px;
-      margin: 0 auto;
-      padding: 32px 24px 64px;
+      max-width: none;
+      margin: 0;
+      padding: 24px 32px 48px;
     }
 
     .page-header {
@@ -235,6 +391,20 @@ const reportTemplate = `<!doctype html>
       position: sticky;
       top: 0;
       z-index: 2;
+    }
+
+    .current-file {
+      font-size: 13px;
+      font-weight: 600;
+      padding: 4px 10px;
+      border-radius: 6px;
+      border: 1px solid var(--panel-border);
+      background: #1b2330;
+      color: var(--text);
+      max-width: 420px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
     }
 
     .file-picker {
@@ -482,28 +652,60 @@ const reportTemplate = `<!doctype html>
   </style>
 </head>
 <body>
-  <div class="container">
-    <header class="page-header">
-      <div>
-        <h1>{{.Title}}</h1>
-        <p>Generated {{.GeneratedAt}}</p>
-      </div>
-      <div class="summary-inline">
-        <div class="summary-item">
-          <span class="label">Total Coverage</span>
-          <span class="value {{.TotalCoverageClass}}">{{.TotalCoveragePercent}}</span>
-        </div>
-        <div class="summary-item">
-          <span class="label">Statements</span>
-          <span class="value">{{.CoveredStmts}} / {{.TotalStmts}}</span>
-        </div>
-        <div class="summary-item">
-          <span class="label">Files</span>
-          <span class="value">{{.TotalFiles}}</span>
-          <span class="label">Missing {{.MissingFiles}}</span>
-        </div>
-      </div>
-    </header>
+  {{define "tree"}}
+    {{range .}}
+      {{if .IsDir}}
+        <li class="tree-dir">
+          <details open>
+            <summary>
+              <span class="tree-arrow"></span>
+              <span class="tree-label">{{.Name}}</span>
+            </summary>
+            <ul class="tree-children">
+              {{template "tree" .Children}}
+            </ul>
+          </details>
+        </li>
+      {{else}}
+        <li class="file-node" data-anchor="{{.Anchor}}" data-name="{{.RelativePath}}" data-coverage="{{.CoveragePercent}}">
+          <button type="button">
+            <span class="file-label">{{.Name}}</span>
+            <span class="file-coverage {{.CoverageClass}}">{{.CoveragePercent}}</span>
+          </button>
+        </li>
+      {{end}}
+    {{end}}
+  {{end}}
+  <div class="app">
+    <aside class="sidebar">
+      <div class="sidebar-header">Files</div>
+      <ul class="file-tree">
+        {{template "tree" .Tree}}
+      </ul>
+    </aside>
+    <main class="main">
+      <div class="container">
+        <header class="page-header">
+          <div>
+            <h1>{{.Title}}</h1>
+            <p>Generated {{.GeneratedAt}}</p>
+          </div>
+          <div class="summary-inline">
+            <div class="summary-item">
+              <span class="label">Total Coverage</span>
+              <span class="value {{.TotalCoverageClass}}">{{.TotalCoveragePercent}}</span>
+            </div>
+            <div class="summary-item">
+              <span class="label">Statements</span>
+              <span class="value">{{.CoveredStmts}} / {{.TotalStmts}}</span>
+            </div>
+            <div class="summary-item">
+              <span class="label">Files</span>
+              <span class="value">{{.TotalFiles}}</span>
+              <span class="label">Missing {{.MissingFiles}}</span>
+            </div>
+          </div>
+        </header>
 
     <section class="summary-grid">
       <div class="card">
@@ -528,35 +730,9 @@ const reportTemplate = `<!doctype html>
       </div>
     </section>
 
-    <table class="file-table">
-      <thead>
-        <tr>
-          <th>File</th>
-          <th>Coverage</th>
-          <th>Statements</th>
-        </tr>
-      </thead>
-      <tbody>
-        {{range .Files}}
-        <tr>
-          <td class="file-name"><a href="#{{.Anchor}}">{{.Name}}</a></td>
-          <td><span class="pill {{.CoverageClass}}">{{.CoveragePercent}}</span></td>
-          <td>{{.CoveredStmts}} / {{.TotalStmts}}</td>
-        </tr>
-        {{end}}
-      </tbody>
-    </table>
-
     <section class="viewer">
       <div class="viewer-bar">
-        <div class="file-picker">
-          <label for="file-select">File</label>
-          <select id="file-select">
-            {{range .Files}}
-            <option value="{{.Anchor}}">{{.Name}} ({{.CoveragePercent}})</option>
-            {{end}}
-          </select>
-        </div>
+        <div class="current-file" id="current-file"></div>
         <div class="legend">
           <span class="legend-item not-tracked">not tracked</span>
           <span class="legend-item missed">not covered</span>
@@ -601,13 +777,16 @@ const reportTemplate = `<!doctype html>
     </section>
 
     <div class="footer">Generated by beautiful-coverage.</div>
+      </div>
+    </main>
   </div>
   <script src="{{.AssetsPath}}/highlight/highlight.min.js"></script>
   <script src="{{.AssetsPath}}/highlight/go.min.js"></script>
   <script>
-    const select = document.getElementById('file-select');
     const sections = Array.from(document.querySelectorAll('.file-section'));
     const filters = document.querySelectorAll('[data-filter]');
+    const fileNodes = Array.from(document.querySelectorAll('.file-node'));
+    const currentFile = document.getElementById('current-file');
     const codeBlocks = document.querySelectorAll('.code-table code');
 
     if (window.hljs) {
@@ -620,10 +799,33 @@ const reportTemplate = `<!doctype html>
       return sections.some((section) => section.id === anchor);
     }
 
+    function setCurrent(anchor) {
+      const node = fileNodes.find((item) => item.dataset.anchor === anchor);
+      if (!node) {
+        return;
+      }
+      const name = node.dataset.name || anchor;
+      const coverage = node.dataset.coverage;
+      if (currentFile) {
+        currentFile.textContent = coverage ? name + ' (' + coverage + ')' : name;
+      }
+      fileNodes.forEach((item) => {
+        item.classList.toggle('active', item.dataset.anchor === anchor);
+      });
+      let parent = node.parentElement;
+      while (parent) {
+        if (parent.tagName === 'DETAILS') {
+          parent.open = true;
+        }
+        parent = parent.parentElement;
+      }
+    }
+
     function activate(anchor, updateHash) {
       sections.forEach((section) => {
         section.classList.toggle('active', section.id === anchor);
       });
+      setCurrent(anchor);
       if (updateHash) {
         history.replaceState(null, '', '#' + anchor);
       }
@@ -632,23 +834,24 @@ const reportTemplate = `<!doctype html>
     function syncFromHash() {
       const hash = window.location.hash.replace('#', '');
       if (hash && hasSection(hash)) {
-        select.value = hash;
         activate(hash, false);
         return;
       }
       if (sections.length > 0) {
-        select.value = sections[0].id;
         activate(sections[0].id, false);
       }
     }
 
-    if (select && sections.length > 0) {
+    if (sections.length > 0) {
       syncFromHash();
-      select.addEventListener('change', (event) => {
-        activate(event.target.value, true);
-      });
       window.addEventListener('hashchange', syncFromHash);
     }
+
+    fileNodes.forEach((node) => {
+      node.addEventListener('click', () => {
+        activate(node.dataset.anchor, true);
+      });
+    });
 
     filters.forEach((filter) => {
       filter.addEventListener('change', (event) => {

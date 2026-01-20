@@ -7,6 +7,7 @@ import (
 	"path"
 	"path/filepath"
 	"regexp"
+	"sort"
 	"strings"
 	"time"
 )
@@ -21,7 +22,19 @@ type Report struct {
 	TotalFiles           int
 	MissingFiles         int
 	AssetsPath           string
+	Tree                 []TreeNode
 	Files                []FileReport
+}
+
+type TreeNode struct {
+	Name            string
+	Path            string
+	RelativePath    string
+	Anchor          string
+	CoveragePercent string
+	CoverageClass   string
+	IsDir           bool
+	Children        []TreeNode
 }
 
 type FileReport struct {
@@ -79,6 +92,7 @@ func Generate(profilePath, root, title string) (Report, error) {
 	totalPercent := percent(totalCovered, totalStmts)
 	report.TotalCoveragePercent = formatPercent(totalPercent)
 	report.TotalCoverageClass = coverageClass(totalPercent)
+	report.Tree = buildTree(report.Files)
 
 	return report, nil
 }
@@ -233,6 +247,94 @@ func resolveSourcePath(fileName, root string, module moduleInfo) (string, string
 func fileExists(path string) bool {
 	info, err := os.Stat(path)
 	return err == nil && !info.IsDir()
+}
+
+type treeEntry struct {
+	name     string
+	path     string
+	children map[string]*treeEntry
+	file     *FileReport
+}
+
+func buildTree(files []FileReport) []TreeNode {
+	root := &treeEntry{children: map[string]*treeEntry{}}
+
+	for index := range files {
+		file := &files[index]
+		relative := file.RelativeSourcePath
+		if relative == "" {
+			relative = file.Name
+		}
+		relative = filepath.ToSlash(relative)
+		if relative == "" {
+			continue
+		}
+
+		parts := strings.Split(relative, "/")
+		current := root
+		currentPath := ""
+		for partIndex, part := range parts {
+			if part == "" {
+				continue
+			}
+			if currentPath == "" {
+				currentPath = part
+			} else {
+				currentPath = currentPath + "/" + part
+			}
+
+			next := current.children[part]
+			if next == nil {
+				next = &treeEntry{name: part, path: currentPath, children: map[string]*treeEntry{}}
+				current.children[part] = next
+			}
+			if partIndex == len(parts)-1 {
+				next.file = file
+			}
+			current = next
+		}
+	}
+
+	return buildTreeNodes(root)
+}
+
+func buildTreeNodes(entry *treeEntry) []TreeNode {
+	directories := make([]TreeNode, 0)
+	files := make([]TreeNode, 0)
+	keys := make([]string, 0, len(entry.children))
+	for key := range entry.children {
+		keys = append(keys, key)
+	}
+	sort.Strings(keys)
+
+	for _, key := range keys {
+		child := entry.children[key]
+		if child.file != nil {
+			relativePath := filepath.ToSlash(child.file.RelativeSourcePath)
+			if relativePath == "" {
+				relativePath = child.path
+			}
+			files = append(files, TreeNode{
+				Name:            child.name,
+				Path:            child.path,
+				RelativePath:    relativePath,
+				Anchor:          child.file.Anchor,
+				CoveragePercent: child.file.CoveragePercent,
+				CoverageClass:   child.file.CoverageClass,
+				IsDir:           false,
+			})
+			continue
+		}
+
+		directories = append(directories, TreeNode{
+			Name:     child.name,
+			Path:     child.path,
+			IsDir:    true,
+			Children: buildTreeNodes(child),
+		})
+	}
+
+	return append(directories, files...)
 }
 
 type lineState struct {
