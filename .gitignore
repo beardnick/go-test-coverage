@@ -1,0 +1,6 @@
+*.log
+.gocache/
+.gotmp/
+*-coverage.html
+*-coverage.out
+
