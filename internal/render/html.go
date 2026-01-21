@@ -13,8 +13,7 @@ const reportTemplate = `<!doctype html>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>{{.Title}}</title>
-  <link rel="stylesheet" href="{{.AssetsPath}}/highlight/github-dark.min.css" media="(prefers-color-scheme: dark)">
-  <link rel="stylesheet" href="{{.AssetsPath}}/highlight/github.min.css" media="(prefers-color-scheme: light)">
+  <link rel="stylesheet" href="{{.AssetsPath}}/highlight/github-dark.min.css">
   <style>
     :root {
       color-scheme: dark;
@@ -713,7 +712,7 @@ const reportTemplate = `<!doctype html>
     {{range .}}
       {{if .IsDir}}
         <li class="tree-dir">
-          <details open>
+          <details>
             <summary>
               <span class="tree-arrow"></span>
               <span class="tree-label">{{.Name}}</span>
@@ -738,7 +737,7 @@ const reportTemplate = `<!doctype html>
     <aside class="sidebar">
       <div class="sidebar-header">
         <span>Files</span>
-        <button type="button" class="sidebar-toggle" id="toggle-tree" aria-expanded="true">Collapse all</button>
+        <button type="button" class="sidebar-toggle" id="toggle-tree" aria-expanded="false">Expand all</button>
       </div>
       <ul class="file-tree">
         {{template "tree" .Tree}}
@@ -891,13 +890,6 @@ const reportTemplate = `<!doctype html>
       fileNodes.forEach((item) => {
         item.classList.toggle('active', item.dataset.anchor === anchor);
       });
-      let parent = node.parentElement;
-      while (parent) {
-        if (parent.tagName === 'DETAILS') {
-          parent.open = true;
-        }
-        parent = parent.parentElement;
-      }
     }
 
     function activate(anchor, updateHash) {
