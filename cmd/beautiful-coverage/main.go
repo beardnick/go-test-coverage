@@ -6,8 +6,8 @@ import (
 	"os"
 	"path/filepath"
 
-	"go-test-coverage/internal/render"
-	"go-test-coverage/internal/report"
+	"github.com/beardnick/go-test-coverage/internal/render"
+	"github.com/beardnick/go-test-coverage/internal/report"
 )
 
 func main() {

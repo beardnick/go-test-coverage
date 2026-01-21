@@ -4,7 +4,7 @@ import (
 	"html/template"
 	"io"
 
-	"go-test-coverage/internal/report"
+	"github.com/beardnick/go-test-coverage/internal/report"
 )
 
 const reportTemplate = `<!doctype html>
