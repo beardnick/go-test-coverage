@@ -68,12 +68,38 @@ const reportTemplate = `<!doctype html>
     }
 
     .sidebar-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
       padding: 16px 18px 12px;
       font-size: 12px;
       letter-spacing: 0.12em;
       text-transform: uppercase;
       color: var(--muted);
       border-bottom: 1px solid var(--panel-border);
+    }
+
+    .sidebar-toggle {
+      border: 1px solid var(--panel-border);
+      background: transparent;
+      color: var(--muted);
+      font-size: 11px;
+      padding: 4px 10px;
+      border-radius: 999px;
+      cursor: pointer;
+      text-transform: none;
+      letter-spacing: normal;
+    }
+
+    .sidebar-toggle:hover {
+      background: rgba(88, 166, 255, 0.08);
+      color: var(--text);
+    }
+
+    .sidebar-toggle:focus-visible {
+      outline: 2px solid var(--accent);
+      outline-offset: 2px;
     }
 
     .file-tree {
@@ -678,7 +704,10 @@ const reportTemplate = `<!doctype html>
   {{end}}
   <div class="app">
     <aside class="sidebar">
-      <div class="sidebar-header">Files</div>
+      <div class="sidebar-header">
+        <span>Files</span>
+        <button type="button" class="sidebar-toggle" id="toggle-tree" aria-expanded="true">Collapse all</button>
+      </div>
       <ul class="file-tree">
         {{template "tree" .Tree}}
       </ul>
@@ -786,12 +815,30 @@ const reportTemplate = `<!doctype html>
     const sections = Array.from(document.querySelectorAll('.file-section'));
     const filters = document.querySelectorAll('[data-filter]');
     const fileNodes = Array.from(document.querySelectorAll('.file-node'));
+    const treeDetails = Array.from(document.querySelectorAll('.tree-dir details'));
+    const treeToggle = document.getElementById('toggle-tree');
     const currentFile = document.getElementById('current-file');
     const codeBlocks = document.querySelectorAll('.code-table code');
 
     if (window.hljs) {
       codeBlocks.forEach((block) => {
         hljs.highlightElement(block);
+      });
+    }
+
+    function updateTreeToggleLabel() {
+      if (!treeToggle) {
+        return;
+      }
+      const allOpen = treeDetails.length > 0 && treeDetails.every((item) => item.open);
+      treeToggle.textContent = allOpen ? 'Collapse all' : 'Expand all';
+      treeToggle.setAttribute('aria-expanded', allOpen ? 'true' : 'false');
+      treeToggle.disabled = treeDetails.length === 0;
+    }
+
+    function setAllTree(open) {
+      treeDetails.forEach((item) => {
+        item.open = open;
       });
     }
 
@@ -845,6 +892,18 @@ const reportTemplate = `<!doctype html>
     if (sections.length > 0) {
       syncFromHash();
       window.addEventListener('hashchange', syncFromHash);
+    }
+
+    if (treeToggle) {
+      treeToggle.addEventListener('click', () => {
+        const allOpen = treeDetails.length > 0 && treeDetails.every((item) => item.open);
+        setAllTree(!allOpen);
+        updateTreeToggleLabel();
+      });
+      treeDetails.forEach((item) => {
+        item.addEventListener('toggle', updateTreeToggleLabel);
+      });
+      updateTreeToggleLabel();
     }
 
     fileNodes.forEach((node) => {
