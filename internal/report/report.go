@@ -33,6 +33,8 @@ type TreeNode struct {
 	Anchor          string
 	CoveragePercent string
 	CoverageClass   string
+	CoveredStmts    int
+	TotalStmts      int
 	IsDir           bool
 	Children        []TreeNode
 }
@@ -250,10 +252,12 @@ func fileExists(path string) bool {
 }
 
 type treeEntry struct {
-	name     string
-	path     string
-	children map[string]*treeEntry
-	file     *FileReport
+	name         string
+	path         string
+	children     map[string]*treeEntry
+	file         *FileReport
+	coveredStmts int
+	totalStmts   int
 }
 
 func buildTree(files []FileReport) []TreeNode {
@@ -295,7 +299,29 @@ func buildTree(files []FileReport) []TreeNode {
 		}
 	}
 
+	computeTreeCoverage(root)
 	return buildTreeNodes(root)
+}
+
+func computeTreeCoverage(entry *treeEntry) (int, int) {
+	if entry == nil {
+		return 0, 0
+	}
+	if entry.file != nil {
+		entry.coveredStmts = entry.file.CoveredStmts
+		entry.totalStmts = entry.file.TotalStmts
+		return entry.coveredStmts, entry.totalStmts
+	}
+	covered := 0
+	total := 0
+	for _, child := range entry.children {
+		childCovered, childTotal := computeTreeCoverage(child)
+		covered += childCovered
+		total += childTotal
+	}
+	entry.coveredStmts = covered
+	entry.totalStmts = total
+	return covered, total
 }
 
 func buildTreeNodes(entry *treeEntry) []TreeNode {
@@ -326,11 +352,16 @@ func buildTreeNodes(entry *treeEntry) []TreeNode {
 			continue
 		}
 
+		coveragePercent := percent(child.coveredStmts, child.totalStmts)
 		directories = append(directories, TreeNode{
-			Name:     child.name,
-			Path:     child.path,
-			IsDir:    true,
-			Children: buildTreeNodes(child),
+			Name:            child.name,
+			Path:            child.path,
+			CoveredStmts:    child.coveredStmts,
+			TotalStmts:      child.totalStmts,
+			CoveragePercent: formatPercent(coveragePercent),
+			CoverageClass:   coverageClass(coveragePercent),
+			IsDir:           true,
+			Children:        buildTreeNodes(child),
 		})
 	}
 

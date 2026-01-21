@@ -161,6 +161,37 @@ const reportTemplate = `<!doctype html>
       flex: 1;
     }
 
+    .tree-coverage {
+      margin-left: auto;
+      font-size: 10px;
+      font-weight: 600;
+      padding: 2px 8px;
+      border-radius: 999px;
+      border: 1px solid var(--panel-border);
+      color: var(--muted);
+      white-space: nowrap;
+    }
+
+    .tree-coverage.high {
+      color: var(--covered);
+      border-color: rgba(63, 185, 80, 0.5);
+    }
+
+    .tree-coverage.medium {
+      color: var(--partial);
+      border-color: rgba(210, 153, 34, 0.5);
+    }
+
+    .tree-coverage.low {
+      color: var(--missed);
+      border-color: rgba(248, 81, 73, 0.5);
+    }
+
+    .tree-coverage.none {
+      color: var(--muted);
+      border-color: rgba(110, 118, 129, 0.5);
+    }
+
     .tree-children {
       list-style: none;
       margin: 0;
@@ -686,6 +717,7 @@ const reportTemplate = `<!doctype html>
             <summary>
               <span class="tree-arrow"></span>
               <span class="tree-label">{{.Name}}</span>
+              <span class="tree-coverage {{.CoverageClass}}">{{.CoveragePercent}}</span>
             </summary>
             <ul class="tree-children">
               {{template "tree" .Children}}
