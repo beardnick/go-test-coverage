@@ -13,14 +13,14 @@ go test ./... -coverprofile=coverage.out
 2. Create the HTML report:
 
 ```bash
-go run ./cmd/beautiful-coverage -profile coverage.out -out coverage.html
+go run ./cmd/beautiful-coverage -out coverage.html
 ```
 
 ## Flags
 
-- `-profile`: path to the coverprofile file (required).
+- `-profile`: path to the coverprofile file (default `coverage.out`).
 - `-out`: output HTML file (default `coverage.html`).
-- `-root`: root directory used to resolve source file paths (default `.`).
+- `-root`: root directory used to resolve source file paths (default: profile directory).
 - `-title`: report title (default `Go Coverage Report`).
 - `-assets`: directory name or path to write local CSS/JS assets (default `assets`).
 

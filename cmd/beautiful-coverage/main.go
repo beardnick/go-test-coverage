@@ -11,19 +11,24 @@ import (
 )
 
 func main() {
-	profilePath := flag.String("profile", "", "path to coverprofile file")
+	profilePath := flag.String("profile", "coverage.out", "path to coverprofile file")
 	outputPath := flag.String("out", "coverage.html", "output HTML file")
-	root := flag.String("root", ".", "root directory for resolving source files")
+	root := flag.String("root", "", "root directory for resolving source files (defaults to profile directory)")
 	title := flag.String("title", "Go Coverage Report", "report title")
 	assetsPath := flag.String("assets", "assets", "assets directory for styles and scripts")
 	flag.Parse()
 
 	if *profilePath == "" {
-		fmt.Fprintln(os.Stderr, "-profile is required")
+		fmt.Fprintln(os.Stderr, "-profile cannot be empty")
 		os.Exit(2)
 	}
 
-	reportData, err := report.Generate(*profilePath, *root, *title)
+	rootPath := *root
+	if rootPath == "" {
+		rootPath = filepath.Dir(*profilePath)
+	}
+
+	reportData, err := report.Generate(*profilePath, rootPath, *title)
 	if err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)
