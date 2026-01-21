@@ -13,7 +13,8 @@ const reportTemplate = `<!doctype html>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>{{.Title}}</title>
-  <link rel="stylesheet" href="{{.AssetsPath}}/highlight/github-dark.min.css">
+  <link id="highlight-dark" rel="stylesheet" href="{{.AssetsPath}}/highlight/github-dark.min.css">
+  <link id="highlight-light" rel="stylesheet" href="{{.AssetsPath}}/highlight/github.min.css" disabled>
   <style>
     :root {
       color-scheme: dark;
@@ -28,6 +29,39 @@ const reportTemplate = `<!doctype html>
       --partial: #d29922;
       --not-tracked: #6e7681;
       --code-bg: #1b2330;
+      --sidebar-bg: #1b2330;
+      --header-bg: #273449;
+      --progress-track: #334155;
+      --input-bg: #1b2330;
+      --code-line-bg: #1b2330;
+      --legend-not-tracked: #c9d1d9;
+      --legend-missed: #fca5a5;
+      --legend-partial: #f5d481;
+      --legend-covered: #7ee787;
+    }
+
+    body.theme-light {
+      color-scheme: light;
+      --bg: #f8fafc;
+      --panel: #ffffff;
+      --panel-border: #e2e8f0;
+      --text: #0f172a;
+      --muted: #64748b;
+      --accent: #2563eb;
+      --covered: #16a34a;
+      --missed: #dc2626;
+      --partial: #d97706;
+      --not-tracked: #94a3b8;
+      --code-bg: #f1f5f9;
+      --sidebar-bg: #eef2f7;
+      --header-bg: #f1f5f9;
+      --progress-track: #e2e8f0;
+      --input-bg: #ffffff;
+      --code-line-bg: #e7edf4;
+      --legend-not-tracked: #475569;
+      --legend-missed: #b91c1c;
+      --legend-partial: #b45309;
+      --legend-covered: #15803d;
     }
 
     * {
@@ -60,7 +94,7 @@ const reportTemplate = `<!doctype html>
 
     .sidebar {
       width: 280px;
-      background: #1b2330;
+      background: var(--sidebar-bg);
       border-right: 1px solid var(--panel-border);
       display: flex;
       flex-direction: column;
@@ -353,7 +387,7 @@ const reportTemplate = `<!doctype html>
     .progress {
       width: 100%;
       height: 6px;
-      background: #334155;
+      background: var(--progress-track);
       border-radius: 999px;
       overflow: hidden;
     }
@@ -417,7 +451,7 @@ const reportTemplate = `<!doctype html>
       color: var(--muted);
       text-transform: uppercase;
       letter-spacing: 0.08em;
-      background: #273449;
+      background: var(--header-bg);
       border-bottom: 1px solid var(--panel-border);
     }
 
@@ -442,7 +476,7 @@ const reportTemplate = `<!doctype html>
       gap: 16px;
       align-items: center;
       padding: 12px 16px;
-      background: #273449;
+      background: var(--header-bg);
       border-bottom: 1px solid var(--panel-border);
       position: sticky;
       top: 0;
@@ -455,7 +489,7 @@ const reportTemplate = `<!doctype html>
       padding: 4px 10px;
       border-radius: 6px;
       border: 1px solid var(--panel-border);
-      background: #1b2330;
+      background: var(--input-bg);
       color: var(--text);
       max-width: 420px;
       overflow: hidden;
@@ -478,7 +512,7 @@ const reportTemplate = `<!doctype html>
     }
 
     .file-picker select {
-      background: #1b2330;
+      background: var(--input-bg);
       color: var(--text);
       border: 1px solid var(--panel-border);
       padding: 6px 10px;
@@ -510,22 +544,30 @@ const reportTemplate = `<!doctype html>
 
     .legend-item.not-tracked {
       border-color: rgba(110, 118, 129, 0.6);
-      color: #c9d1d9;
+      color: var(--legend-not-tracked);
     }
 
     .legend-item.missed {
       border-color: rgba(248, 81, 73, 0.6);
-      color: #fca5a5;
+      color: var(--legend-missed);
     }
 
     .legend-item.partial {
       border-color: rgba(210, 153, 34, 0.7);
-      color: #f5d481;
+      color: var(--legend-partial);
     }
 
     .legend-item.covered {
       border-color: rgba(63, 185, 80, 0.7);
-      color: #7ee787;
+      color: var(--legend-covered);
+    }
+
+    .viewer-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      align-items: center;
+      margin-left: auto;
     }
 
     .filters {
@@ -533,7 +575,6 @@ const reportTemplate = `<!doctype html>
       flex-wrap: wrap;
       gap: 12px;
       align-items: center;
-      margin-left: auto;
     }
 
     .filter {
@@ -546,6 +587,25 @@ const reportTemplate = `<!doctype html>
 
     .filter input {
       accent-color: var(--accent);
+    }
+
+    .theme-toggle {
+      border: 1px solid var(--panel-border);
+      background: transparent;
+      color: var(--text);
+      font-size: 12px;
+      padding: 6px 10px;
+      border-radius: 999px;
+      cursor: pointer;
+    }
+
+    .theme-toggle:hover {
+      background: rgba(88, 166, 255, 0.08);
+    }
+
+    .theme-toggle:focus-visible {
+      outline: 2px solid var(--accent);
+      outline-offset: 2px;
     }
 
     .viewer-body {
@@ -633,7 +693,7 @@ const reportTemplate = `<!doctype html>
       text-align: right;
       color: var(--muted);
       border-right: 1px solid var(--panel-border);
-      background: #1b2330;
+      background: var(--code-line-bg);
       user-select: none;
     }
 
@@ -664,15 +724,15 @@ const reportTemplate = `<!doctype html>
     }
 
     .code-table tr.covered .line-no {
-      color: #7ee787;
+      color: var(--covered);
     }
 
     .code-table tr.missed .line-no {
-      color: #fca5a5;
+      color: var(--missed);
     }
 
     .code-table tr.partial .line-no {
-      color: #f5d481;
+      color: var(--partial);
     }
 
     .missing {
@@ -799,11 +859,14 @@ const reportTemplate = `<!doctype html>
           <span class="legend-item partial">partial</span>
           <span class="legend-item covered">covered</span>
         </div>
-        <div class="filters">
-          <label class="filter"><input type="checkbox" data-filter="not-tracked" checked> not tracked</label>
-          <label class="filter"><input type="checkbox" data-filter="missed" checked> not covered</label>
-          <label class="filter"><input type="checkbox" data-filter="partial" checked> partial</label>
-          <label class="filter"><input type="checkbox" data-filter="covered" checked> covered</label>
+        <div class="viewer-actions">
+          <div class="filters">
+            <label class="filter"><input type="checkbox" data-filter="not-tracked" checked> not tracked</label>
+            <label class="filter"><input type="checkbox" data-filter="missed" checked> not covered</label>
+            <label class="filter"><input type="checkbox" data-filter="partial" checked> partial</label>
+            <label class="filter"><input type="checkbox" data-filter="covered" checked> covered</label>
+          </div>
+          <button type="button" class="theme-toggle" id="theme-toggle" aria-pressed="false">Light theme</button>
         </div>
       </div>
       <div class="viewer-body">
@@ -850,11 +913,47 @@ const reportTemplate = `<!doctype html>
     const treeToggle = document.getElementById('toggle-tree');
     const currentFile = document.getElementById('current-file');
     const codeBlocks = document.querySelectorAll('.code-table code');
+    const themeToggle = document.getElementById('theme-toggle');
+    const highlightDark = document.getElementById('highlight-dark');
+    const highlightLight = document.getElementById('highlight-light');
 
     if (window.hljs) {
       codeBlocks.forEach((block) => {
         hljs.highlightElement(block);
       });
+    }
+
+    function applyTheme(theme) {
+      const useLight = theme === 'light';
+      document.body.classList.toggle('theme-light', useLight);
+      if (highlightDark && highlightLight) {
+        highlightDark.disabled = useLight;
+        highlightLight.disabled = !useLight;
+      }
+      if (themeToggle) {
+        themeToggle.textContent = useLight ? 'Dark theme' : 'Light theme';
+        themeToggle.setAttribute('aria-pressed', useLight ? 'true' : 'false');
+      }
+      try {
+        localStorage.setItem('theme', theme);
+      } catch (err) {
+        // Ignore storage failures (private mode, etc.).
+      }
+    }
+
+    function initTheme() {
+      let theme = 'dark';
+      try {
+        const stored = localStorage.getItem('theme');
+        if (stored === 'light' || stored === 'dark') {
+          theme = stored;
+        } else if (window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches) {
+          theme = 'light';
+        }
+      } catch (err) {
+        // Ignore storage failures and fall back to default theme.
+      }
+      applyTheme(theme);
     }
 
     function updateTreeToggleLabel() {
@@ -929,6 +1028,15 @@ const reportTemplate = `<!doctype html>
       });
       updateTreeToggleLabel();
     }
+
+    if (themeToggle) {
+      themeToggle.addEventListener('click', () => {
+        const isLight = document.body.classList.contains('theme-light');
+        applyTheme(isLight ? 'dark' : 'light');
+      });
+    }
+
+    initTheme();
 
     fileNodes.forEach((node) => {
       node.addEventListener('click', () => {
