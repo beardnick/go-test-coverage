@@ -280,7 +280,27 @@ func resolveSourcePath(fileName, root string, module moduleInfo) (string, string
 		}
 	}
 
+	if resolved, relativeResolved := resolveBySuffix(root, fileName); resolved != "" {
+		return resolved, relativeResolved
+	}
+
 	return candidate, relative
+}
+
+func resolveBySuffix(root, fileName string) (string, string) {
+	parts := strings.Split(fileName, "/")
+	for index := 1; index < len(parts); index++ {
+		trimmed := strings.Join(parts[index:], "/")
+		if trimmed == "" {
+			continue
+		}
+		relative := filepath.FromSlash(trimmed)
+		candidate := filepath.Join(root, relative)
+		if fileExists(candidate) {
+			return candidate, relative
+		}
+	}
+	return "", ""
 }
 
 func fileExists(path string) bool {
