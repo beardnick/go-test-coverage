@@ -13,8 +13,8 @@ const reportTemplate = `<!doctype html>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>{{.Title}}</title>
-  <link id="highlight-dark" rel="stylesheet" href="{{.AssetsPath}}/highlight/github-dark.min.css">
-  <link id="highlight-light" rel="stylesheet" href="{{.AssetsPath}}/highlight/github.min.css" disabled>
+  <style id="highlight-dark">{{.HighlightDarkCSS}}</style>
+  <style id="highlight-light" disabled>{{.HighlightLightCSS}}</style>
   <style>
     :root {
       color-scheme: dark;
@@ -912,8 +912,8 @@ const reportTemplate = `<!doctype html>
       </div>
     </main>
   </div>
-  <script src="{{.AssetsPath}}/highlight/highlight.min.js"></script>
-  <script src="{{.AssetsPath}}/highlight/go.min.js"></script>
+  <script>{{.HighlightJS}}</script>
+  <script>{{.HighlightGoJS}}</script>
   <script>
     const sections = Array.from(document.querySelectorAll('.file-section'));
     const filters = document.querySelectorAll('[data-filter]');
@@ -1144,9 +1144,29 @@ const reportTemplate = `<!doctype html>
 `
 
 func HTML(writer io.Writer, reportData report.Report) error {
+	assets, err := LoadInlineAssets()
+	if err != nil {
+		return err
+	}
+
 	tmpl, err := template.New("report").Parse(reportTemplate)
 	if err != nil {
 		return err
 	}
-	return tmpl.Execute(writer, reportData)
+
+	data := struct {
+		report.Report
+		HighlightDarkCSS  template.CSS
+		HighlightLightCSS template.CSS
+		HighlightJS       template.JS
+		HighlightGoJS     template.JS
+	}{
+		Report:            reportData,
+		HighlightDarkCSS:  template.CSS(assets.HighlightDarkCSS),
+		HighlightLightCSS: template.CSS(assets.HighlightLightCSS),
+		HighlightJS:       template.JS(assets.HighlightJS),
+		HighlightGoJS:     template.JS(assets.HighlightGoJS),
+	}
+
+	return tmpl.Execute(writer, data)
 }

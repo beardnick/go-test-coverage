@@ -1,6 +1,6 @@
 # Beautiful Go Coverage
 
-Generate a modern HTML coverage report directly from a Go coverprofile without converting the `go tool cover` output.
+Generate a modern HTML coverage report directly from a Go coverprofile without converting the `go tool cover` output. The report is emitted as a single, self-contained HTML file with embedded styles and scripts.
 
 ## Usage
 
@@ -22,7 +22,6 @@ go run ./cmd/beautiful-coverage -out coverage.html
 - `-out`: output HTML file (default `coverage.html`).
 - `-root`: root directory used to resolve source file paths (default: profile directory).
 - `-title`: report title (default `Go Coverage Report`).
-- `-assets`: directory name or path to write local CSS/JS assets (default `assets`).
 
 ## Coverage Algorithm
 

@@ -15,7 +15,6 @@ func main() {
 	outputPath := flag.String("out", "coverage.html", "output HTML file")
 	root := flag.String("root", "", "root directory for resolving source files (defaults to profile directory)")
 	title := flag.String("title", "Go Coverage Report", "report title")
-	assetsPath := flag.String("assets", "assets", "assets directory for styles and scripts")
 	flag.Parse()
 
 	if *profilePath == "" {
@@ -33,17 +32,6 @@ func main() {
 		fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)
 	}
-
-	assetsDir := filepath.Clean(*assetsPath)
-	assetsOutputDir := assetsDir
-	if !filepath.IsAbs(assetsOutputDir) {
-		assetsOutputDir = filepath.Join(filepath.Dir(*outputPath), assetsOutputDir)
-	}
-	if err := render.CopyAssets(assetsOutputDir); err != nil {
-		fmt.Fprintln(os.Stderr, err)
-		os.Exit(1)
-	}
-	reportData.AssetsPath = filepath.ToSlash(assetsDir)
 
 	outputFile, err := os.Create(*outputPath)
 	if err != nil {

@@ -6,6 +6,7 @@ import (
 	"io"
 	"io/fs"
 	"os"
+	"path"
 	"path/filepath"
 	"strings"
 )
@@ -14,6 +15,51 @@ const assetsRoot = "assets"
 
 //go:embed assets/highlight/*
 var embeddedAssets embed.FS
+
+type InlineAssets struct {
+	HighlightDarkCSS  string
+	HighlightLightCSS string
+	HighlightJS       string
+	HighlightGoJS     string
+}
+
+func LoadInlineAssets() (InlineAssets, error) {
+	dark, err := readAsset(path.Join(assetsRoot, "highlight", "github-dark.min.css"))
+	if err != nil {
+		return InlineAssets{}, err
+	}
+
+	light, err := readAsset(path.Join(assetsRoot, "highlight", "github.min.css"))
+	if err != nil {
+		return InlineAssets{}, err
+	}
+
+	highlightJS, err := readAsset(path.Join(assetsRoot, "highlight", "highlight.min.js"))
+	if err != nil {
+		return InlineAssets{}, err
+	}
+
+	goJS, err := readAsset(path.Join(assetsRoot, "highlight", "go.min.js"))
+	if err != nil {
+		return InlineAssets{}, err
+	}
+
+	return InlineAssets{
+		HighlightDarkCSS:  dark,
+		HighlightLightCSS: light,
+		HighlightJS:       highlightJS,
+		HighlightGoJS:     goJS,
+	}, nil
+}
+
+func readAsset(assetPath string) (string, error) {
+	content, err := embeddedAssets.ReadFile(assetPath)
+	if err != nil {
+		return "", fmt.Errorf("read asset %s: %w", assetPath, err)
+	}
+
+	return string(content), nil
+}
 
 func CopyAssets(destDir string) error {
 	if destDir == "" {

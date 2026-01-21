@@ -21,7 +21,6 @@ type Report struct {
 	TotalStmts           int
 	TotalFiles           int
 	MissingFiles         int
-	AssetsPath           string
 	Tree                 []TreeNode
 	Files                []FileReport
 }
@@ -69,7 +68,6 @@ func Generate(profilePath, root, title string) (Report, error) {
 	report := Report{
 		Title:       title,
 		GeneratedAt: time.Now().Format("2006-01-02 15:04:05"),
-		AssetsPath:  "assets",
 	}
 
 	totalCovered := 0
