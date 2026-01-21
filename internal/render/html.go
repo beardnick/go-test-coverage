@@ -38,6 +38,7 @@ const reportTemplate = `<!doctype html>
       --legend-missed: #fca5a5;
       --legend-partial: #f5d481;
       --legend-covered: #7ee787;
+      --partial-range: rgba(248, 81, 73, 0.35);
     }
 
     body.theme-light {
@@ -62,6 +63,7 @@ const reportTemplate = `<!doctype html>
       --legend-missed: #b91c1c;
       --legend-partial: #b45309;
       --legend-covered: #15803d;
+      --partial-range: rgba(220, 38, 38, 0.22);
     }
 
     * {
@@ -680,6 +682,8 @@ const reportTemplate = `<!doctype html>
       overflow: hidden;
       background: var(--code-bg);
       border: 1px solid var(--panel-border);
+      tab-size: 4;
+      -moz-tab-size: 4;
     }
 
     .code-table td {
@@ -717,6 +721,11 @@ const reportTemplate = `<!doctype html>
 
     .code-table tr.partial td.code {
       background: rgba(210, 153, 34, 0.16);
+    }
+
+    .partial-range {
+      background: var(--partial-range);
+      border-radius: 3px;
     }
 
     .code-table tr.not-tracked td.code {
@@ -888,7 +897,7 @@ const reportTemplate = `<!doctype html>
               {{range .Lines}}
               <tr class="{{.Class}}">
                 <td class="line-no">{{.Number}}</td>
-                <td class="code"><code class="hljs language-go">{{.Code}}</code></td>
+                <td class="code"{{if .Ranges}} data-partial="{{.Ranges}}"{{end}}><code class="hljs language-go">{{.Code}}</code></td>
               </tr>
               {{end}}
             </tbody>
@@ -920,6 +929,85 @@ const reportTemplate = `<!doctype html>
     if (window.hljs) {
       codeBlocks.forEach((block) => {
         hljs.highlightElement(block);
+      });
+    }
+    applyPartialRanges();
+
+    function parseRanges(value) {
+      if (!value) {
+        return [];
+      }
+      return value.split(',').map((segment) => {
+        const parts = segment.split('-').map((part) => Number(part));
+        if (parts.length !== 2) {
+          return null;
+        }
+        const start = parts[0];
+        const end = parts[1];
+        if (!Number.isFinite(start) || !Number.isFinite(end) || end <= start) {
+          return null;
+        }
+        return { start, end };
+      }).filter(Boolean);
+    }
+
+    function wrapNodeRanges(node, ranges) {
+      const text = node.nodeValue || '';
+      if (!text || ranges.length === 0) {
+        return;
+      }
+      const fragment = document.createDocumentFragment();
+      let cursor = 0;
+      ranges.forEach((range) => {
+        if (range.start > cursor) {
+          fragment.appendChild(document.createTextNode(text.slice(cursor, range.start)));
+        }
+        const span = document.createElement('span');
+        span.className = 'partial-range';
+        span.textContent = text.slice(range.start, range.end);
+        fragment.appendChild(span);
+        cursor = range.end;
+      });
+      if (cursor < text.length) {
+        fragment.appendChild(document.createTextNode(text.slice(cursor)));
+      }
+      node.replaceWith(fragment);
+    }
+
+    function applyPartialRanges() {
+      const cells = document.querySelectorAll('td.code[data-partial]');
+      cells.forEach((cell) => {
+        const ranges = parseRanges(cell.dataset.partial);
+        if (ranges.length === 0) {
+          return;
+        }
+        const code = cell.querySelector('code');
+        if (!code) {
+          return;
+        }
+        const textNodes = [];
+        const walker = document.createTreeWalker(code, NodeFilter.SHOW_TEXT);
+        while (walker.nextNode()) {
+          textNodes.push(walker.currentNode);
+        }
+        let offset = 1;
+        textNodes.forEach((node) => {
+          const length = (node.nodeValue || '').length;
+          const nodeStart = offset;
+          const nodeEnd = offset + length;
+          const nodeRanges = ranges.map((range) => {
+            const start = Math.max(range.start, nodeStart);
+            const end = Math.min(range.end, nodeEnd);
+            if (end <= start) {
+              return null;
+            }
+            return { start: start - nodeStart, end: end - nodeStart };
+          }).filter(Boolean);
+          if (nodeRanges.length > 0) {
+            wrapNodeRanges(node, nodeRanges);
+          }
+          offset = nodeEnd;
+        });
       });
     }
 

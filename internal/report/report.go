@@ -56,6 +56,7 @@ type LineCoverage struct {
 	Number int
 	Code   string
 	Class  string
+	Ranges string
 }
 
 func Generate(profilePath, root, title string) (Report, error) {
@@ -146,17 +147,46 @@ func buildFileReport(profile Profile, root string, module moduleInfo) (FileRepor
 		for line := start; line <= end; line++ {
 			state := &lineStates[line-1]
 			state.hasStmt = true
+
+			lineText := lines[line-1]
+			maxCol := len(lineText) + 1
+			startCol := 1
+			endCol := maxCol
+			if line == block.StartLine {
+				startCol = block.StartCol
+			}
+			if line == block.EndLine {
+				endCol = block.EndCol
+			}
+			if startCol < 1 {
+				startCol = 1
+			}
+			if startCol > maxCol {
+				startCol = maxCol
+			}
+			if endCol < startCol {
+				endCol = startCol
+			}
+			if endCol > maxCol {
+				endCol = maxCol
+			}
+
 			if block.Count > 0 {
 				state.covered = true
 			} else {
 				state.missed = true
+				if endCol > startCol {
+					state.missedRanges = append(state.missedRanges, lineRange{
+						start: startCol,
+						end:   endCol,
+					})
+				}
 			}
 		}
 	}
 
 	report.Lines = make([]LineCoverage, 0, len(lines))
 	for index, raw := range lines {
-		cleaned := strings.ReplaceAll(raw, "\t", "    ")
 		state := lineStates[index]
 		className := "not-tracked"
 		if state.hasStmt {
@@ -169,10 +199,17 @@ func buildFileReport(profile Profile, root string, module moduleInfo) (FileRepor
 			}
 		}
 
+		partialRanges := ""
+		if state.covered && state.missed {
+			mergedRanges := mergeRanges(state.missedRanges)
+			partialRanges = formatRanges(mergedRanges)
+		}
+
 		report.Lines = append(report.Lines, LineCoverage{
 			Number: index + 1,
-			Code:   cleaned,
+			Code:   raw,
 			Class:  className,
+			Ranges: partialRanges,
 		})
 	}
 
@@ -369,9 +406,53 @@ func buildTreeNodes(entry *treeEntry) []TreeNode {
 }
 
 type lineState struct {
-	hasStmt bool
-	covered bool
-	missed  bool
+	hasStmt      bool
+	covered      bool
+	missed       bool
+	missedRanges []lineRange
+}
+
+type lineRange struct {
+	start int
+	end   int
+}
+
+func mergeRanges(ranges []lineRange) []lineRange {
+	if len(ranges) == 0 {
+		return nil
+	}
+	sort.Slice(ranges, func(i, j int) bool {
+		if ranges[i].start == ranges[j].start {
+			return ranges[i].end < ranges[j].end
+		}
+		return ranges[i].start < ranges[j].start
+	})
+
+	merged := make([]lineRange, 0, len(ranges))
+	current := ranges[0]
+	for _, item := range ranges[1:] {
+		if item.start <= current.end {
+			if item.end > current.end {
+				current.end = item.end
+			}
+			continue
+		}
+		merged = append(merged, current)
+		current = item
+	}
+	merged = append(merged, current)
+	return merged
+}
+
+func formatRanges(ranges []lineRange) string {
+	if len(ranges) == 0 {
+		return ""
+	}
+	parts := make([]string, 0, len(ranges))
+	for _, item := range ranges {
+		parts = append(parts, fmt.Sprintf("%d-%d", item.start, item.end))
+	}
+	return strings.Join(parts, ",")
 }
 
 func percent(covered, total int) float64 {
