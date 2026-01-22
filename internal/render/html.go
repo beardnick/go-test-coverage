@@ -307,6 +307,13 @@ const reportTemplate = `<!doctype html>
       padding: 24px 32px 48px;
     }
 
+    .page-actions {
+      display: flex;
+      align-items: center;
+      justify-content: flex-start;
+      margin-bottom: 12px;
+    }
+
     .page-header {
       display: flex;
       flex-wrap: wrap;
@@ -814,6 +821,9 @@ const reportTemplate = `<!doctype html>
     </aside>
     <main class="main">
       <div class="container">
+        <div class="page-actions">
+          <button type="button" class="theme-toggle" id="theme-toggle" aria-pressed="false">Light theme</button>
+        </div>
         <header class="page-header">
           <div>
             <h1>{{.Title}}</h1>
@@ -875,7 +885,6 @@ const reportTemplate = `<!doctype html>
             <label class="filter"><input type="checkbox" data-filter="partial" checked> partial</label>
             <label class="filter"><input type="checkbox" data-filter="covered" checked> covered</label>
           </div>
-          <button type="button" class="theme-toggle" id="theme-toggle" aria-pressed="false">Light theme</button>
         </div>
       </div>
       <div class="viewer-body">
