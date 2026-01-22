@@ -2,6 +2,8 @@
 
 Generate a modern HTML coverage report directly from a Go coverprofile without converting the `go tool cover` output. The report is emitted as a single, self-contained HTML file with embedded styles and scripts.
 
+Inspired by `https://github.com/gha-common/go-beautiful-html-coverage`.
+
 ## Usage
 
 1. Generate a coverprofile:
