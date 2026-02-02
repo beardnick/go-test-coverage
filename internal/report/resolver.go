@@ -41,7 +41,13 @@ func newFileResolver(root string, profiles []*cover.Profile) (*fileResolver, err
 
 func (resolver *fileResolver) resolve(fileName string) (string, string) {
 	if filepath.IsAbs(fileName) {
-		return fileName, fileName
+		relative := fileName
+		if resolver.root != "" {
+			if rel, err := filepath.Rel(resolver.root, fileName); err == nil && !strings.HasPrefix(rel, "..") {
+				relative = rel
+			}
+		}
+		return fileName, relative
 	}
 
 	if strings.HasPrefix(fileName, ".") {
