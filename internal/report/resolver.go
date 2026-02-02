@@ -28,13 +28,21 @@ type goPackage struct {
 }
 
 func newFileResolver(root string, profiles []*cover.Profile) (*fileResolver, error) {
-	pkgs, err := findPackages(root, profiles)
+	resolvedRoot := root
+	if resolvedRoot == "" {
+		resolvedRoot = "."
+	}
+	if absRoot, err := filepath.Abs(resolvedRoot); err == nil {
+		resolvedRoot = absRoot
+	}
+
+	pkgs, err := findPackages(resolvedRoot, profiles)
 	if err != nil {
 		return nil, err
 	}
 
 	return &fileResolver{
-		root: root,
+		root: resolvedRoot,
 		pkgs: pkgs,
 	}, nil
 }
