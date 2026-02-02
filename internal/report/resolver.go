@@ -1,7 +1,6 @@
 package report
 
 import (
-	"bufio"
 	"bytes"
 	"encoding/json"
 	"fmt"
@@ -11,12 +10,13 @@ import (
 	"path"
 	"path/filepath"
 	"strings"
+
+	"golang.org/x/tools/cover"
 )
 
 type fileResolver struct {
-	root   string
-	module moduleInfo
-	pkgs   map[string]*goPackage
+	root string
+	pkgs map[string]*goPackage
 }
 
 type goPackage struct {
@@ -27,21 +27,15 @@ type goPackage struct {
 	}
 }
 
-type moduleInfo struct {
-	path string
-	base string
-}
-
-func newFileResolver(root string, profiles []Profile) (*fileResolver, error) {
+func newFileResolver(root string, profiles []*cover.Profile) (*fileResolver, error) {
 	pkgs, err := findPackages(root, profiles)
 	if err != nil {
 		return nil, err
 	}
 
 	return &fileResolver{
-		root:   root,
-		module: loadModuleInfo(root),
-		pkgs:   pkgs,
+		root: root,
+		pkgs: pkgs,
 	}, nil
 }
 
@@ -62,7 +56,8 @@ func (resolver *fileResolver) resolve(fileName string) (string, string) {
 		return resolved, relative
 	}
 
-	return resolveByModuleFallback(fileName, resolver.root, resolver.module)
+	relative := filepath.FromSlash(fileName)
+	return filepath.Join(resolver.root, relative), relative
 }
 
 func (resolver *fileResolver) resolveFromPackages(fileName string) (string, string) {
@@ -84,7 +79,7 @@ func (resolver *fileResolver) resolveFromPackages(fileName string) (string, stri
 	return candidate, relative
 }
 
-func findPackages(root string, profiles []Profile) (map[string]*goPackage, error) {
+func findPackages(root string, profiles []*cover.Profile) (map[string]*goPackage, error) {
 	pkgs := make(map[string]*goPackage)
 	list := make([]string, 0)
 
@@ -132,84 +127,6 @@ func findPackages(root string, profiles []Profile) (map[string]*goPackage, error
 	}
 
 	return pkgs, nil
-}
-
-func loadModuleInfo(root string) moduleInfo {
-	data, err := os.ReadFile(filepath.Join(root, "go.mod"))
-	if err != nil {
-		return moduleInfo{}
-	}
-
-	scanner := bufio.NewScanner(strings.NewReader(string(data)))
-	for scanner.Scan() {
-		line := strings.TrimSpace(scanner.Text())
-		if strings.HasPrefix(line, "module ") {
-			parts := strings.Fields(line)
-			if len(parts) >= 2 {
-				modulePath := parts[1]
-				return moduleInfo{
-					path: modulePath,
-					base: path.Base(modulePath),
-				}
-			}
-		}
-	}
-
-	return moduleInfo{}
-}
-
-func resolveByModuleFallback(fileName, root string, module moduleInfo) (string, string) {
-	relative := filepath.FromSlash(fileName)
-	candidate := filepath.Join(root, relative)
-	if fileExists(candidate) {
-		return candidate, relative
-	}
-
-	if module.path != "" {
-		prefix := module.path + "/"
-		if strings.HasPrefix(fileName, prefix) {
-			trimmed := strings.TrimPrefix(fileName, prefix)
-			relativeTrimmed := filepath.FromSlash(trimmed)
-			candidate = filepath.Join(root, relativeTrimmed)
-			if fileExists(candidate) {
-				return candidate, relativeTrimmed
-			}
-		}
-	}
-
-	if module.base != "" {
-		prefix := module.base + "/"
-		if strings.HasPrefix(fileName, prefix) {
-			trimmed := strings.TrimPrefix(fileName, prefix)
-			relativeTrimmed := filepath.FromSlash(trimmed)
-			candidate = filepath.Join(root, relativeTrimmed)
-			if fileExists(candidate) {
-				return candidate, relativeTrimmed
-			}
-		}
-	}
-
-	if resolved, relativeResolved := resolveBySuffix(root, fileName); resolved != "" {
-		return resolved, relativeResolved
-	}
-
-	return candidate, relative
-}
-
-func resolveBySuffix(root, fileName string) (string, string) {
-	parts := strings.Split(fileName, "/")
-	for index := 1; index < len(parts); index++ {
-		trimmed := strings.Join(parts[index:], "/")
-		if trimmed == "" {
-			continue
-		}
-		relative := filepath.FromSlash(trimmed)
-		candidate := filepath.Join(root, relative)
-		if fileExists(candidate) {
-			return candidate, relative
-		}
-	}
-	return "", ""
 }
 
 func fileExists(path string) bool {

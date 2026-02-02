@@ -8,6 +8,8 @@ import (
 	"sort"
 	"strings"
 	"time"
+
+	"golang.org/x/tools/cover"
 )
 
 type Report struct {
@@ -100,7 +102,7 @@ func Generate(profilePath, root, title string) (Report, error) {
 	return report, nil
 }
 
-func buildFileReport(profile Profile, resolver *fileResolver) (FileReport, error) {
+func buildFileReport(profile *cover.Profile, resolver *fileResolver) (FileReport, error) {
 	fileName := profile.FileName
 	totalStmts := 0
 	coveredStmts := 0
