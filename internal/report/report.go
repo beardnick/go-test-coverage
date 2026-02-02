@@ -1,10 +1,8 @@
 package report
 
 import (
-	"bufio"
 	"fmt"
 	"os"
-	"path"
 	"path/filepath"
 	"regexp"
 	"sort"
@@ -64,7 +62,11 @@ func Generate(profilePath, root, title string) (Report, error) {
 		return Report{}, err
 	}
 
-	module := loadModuleInfo(root)
+	resolver, err := newFileResolver(root, profiles)
+	if err != nil {
+		return Report{}, err
+	}
+
 	report := Report{
 		Title:       title,
 		GeneratedAt: time.Now().Format("2006-01-02 15:04:05"),
@@ -74,7 +76,7 @@ func Generate(profilePath, root, title string) (Report, error) {
 	totalStmts := 0
 
 	for _, profile := range profiles {
-		fileReport, err := buildFileReport(profile, root, module)
+		fileReport, err := buildFileReport(profile, resolver)
 		if err != nil {
 			return Report{}, err
 		}
@@ -98,7 +100,7 @@ func Generate(profilePath, root, title string) (Report, error) {
 	return report, nil
 }
 
-func buildFileReport(profile Profile, root string, module moduleInfo) (FileReport, error) {
+func buildFileReport(profile Profile, resolver *fileResolver) (FileReport, error) {
 	fileName := profile.FileName
 	totalStmts := 0
 	coveredStmts := 0
@@ -120,7 +122,7 @@ func buildFileReport(profile Profile, root string, module moduleInfo) (FileRepor
 		Anchor:          sanitizeAnchor(fileName),
 	}
 
-	sourcePath, relativePath := resolveSourcePath(fileName, root, module)
+	sourcePath, relativePath := resolver.resolve(fileName)
 	report.RelativeSourcePath = relativePath
 
 	content, err := os.ReadFile(sourcePath)
@@ -212,98 +214,6 @@ func buildFileReport(profile Profile, root string, module moduleInfo) (FileRepor
 	}
 
 	return report, nil
-}
-
-type moduleInfo struct {
-	path string
-	base string
-}
-
-func loadModuleInfo(root string) moduleInfo {
-	data, err := os.ReadFile(filepath.Join(root, "go.mod"))
-	if err != nil {
-		return moduleInfo{}
-	}
-
-	scanner := bufio.NewScanner(strings.NewReader(string(data)))
-	for scanner.Scan() {
-		line := strings.TrimSpace(scanner.Text())
-		if strings.HasPrefix(line, "module ") {
-			parts := strings.Fields(line)
-			if len(parts) >= 2 {
-				modulePath := parts[1]
-				return moduleInfo{
-					path: modulePath,
-					base: path.Base(modulePath),
-				}
-			}
-		}
-	}
-
-	return moduleInfo{}
-}
-
-func resolveSourcePath(fileName, root string, module moduleInfo) (string, string) {
-	if filepath.IsAbs(fileName) {
-		return fileName, fileName
-	}
-
-	relative := filepath.FromSlash(fileName)
-	candidate := filepath.Join(root, relative)
-	if fileExists(candidate) {
-		return candidate, relative
-	}
-
-	if module.path != "" {
-		prefix := module.path + "/"
-		if strings.HasPrefix(fileName, prefix) {
-			trimmed := strings.TrimPrefix(fileName, prefix)
-			relativeTrimmed := filepath.FromSlash(trimmed)
-			candidate = filepath.Join(root, relativeTrimmed)
-			if fileExists(candidate) {
-				return candidate, relativeTrimmed
-			}
-		}
-	}
-
-	if module.base != "" {
-		prefix := module.base + "/"
-		if strings.HasPrefix(fileName, prefix) {
-			trimmed := strings.TrimPrefix(fileName, prefix)
-			relativeTrimmed := filepath.FromSlash(trimmed)
-			candidate = filepath.Join(root, relativeTrimmed)
-			if fileExists(candidate) {
-				return candidate, relativeTrimmed
-			}
-		}
-	}
-
-	if resolved, relativeResolved := resolveBySuffix(root, fileName); resolved != "" {
-		return resolved, relativeResolved
-	}
-
-	return candidate, relative
-}
-
-func resolveBySuffix(root, fileName string) (string, string) {
-	parts := strings.Split(fileName, "/")
-	for index := 1; index < len(parts); index++ {
-		trimmed := strings.Join(parts[index:], "/")
-		if trimmed == "" {
-			continue
-		}
-		relative := filepath.FromSlash(trimmed)
-		candidate := filepath.Join(root, relative)
-		if fileExists(candidate) {
-			return candidate, relative
-		}
-	}
-	return "", ""
-}
-
-func fileExists(path string) bool {
-	info, err := os.Stat(path)
-	return err == nil && !info.IsDir()
 }
 
 type treeEntry struct {
