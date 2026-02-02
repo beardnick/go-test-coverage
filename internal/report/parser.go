@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"fmt"
 	"os"
+	"sort"
 	"strconv"
 	"strings"
 )
@@ -22,6 +23,8 @@ type ProfileBlock struct {
 	NumStmt   int
 	Count     int
 }
+
+const modeSet = "set"
 
 func ParseProfiles(path string) ([]Profile, error) {
 	file, err := os.Open(path)
@@ -96,6 +99,11 @@ func ParseProfiles(path string) ([]Profile, error) {
 	result := make([]Profile, 0, len(order))
 	for _, name := range order {
 		profile := profiles[name]
+		mergedBlocks, err := mergeProfileBlocks(profile.Blocks, mode)
+		if err != nil {
+			return nil, err
+		}
+		profile.Blocks = mergedBlocks
 		profile.Mode = mode
 		result = append(result, *profile)
 	}
@@ -147,4 +155,58 @@ func parseLineColumn(value string) (int, int, error) {
 		return 0, 0, err
 	}
 	return line, col, nil
+}
+
+type blocksByStart []ProfileBlock
+
+func (blocks blocksByStart) Len() int { return len(blocks) }
+
+func (blocks blocksByStart) Less(index, other int) bool {
+	left := blocks[index]
+	right := blocks[other]
+	if left.StartLine != right.StartLine {
+		return left.StartLine < right.StartLine
+	}
+	return left.StartCol < right.StartCol
+}
+
+func (blocks blocksByStart) Swap(index, other int) {
+	blocks[index], blocks[other] = blocks[other], blocks[index]
+}
+
+func mergeProfileBlocks(blocks []ProfileBlock, mode string) ([]ProfileBlock, error) {
+	if len(blocks) == 0 {
+		return blocks, nil
+	}
+
+	sort.Sort(blocksByStart(blocks))
+	merged := make([]ProfileBlock, 0, len(blocks))
+	merged = append(merged, blocks[0])
+
+	for index := 1; index < len(blocks); index++ {
+		block := blocks[index]
+		lastIndex := len(merged) - 1
+		last := merged[lastIndex]
+		if sameBlockRange(block, last) {
+			if block.NumStmt != last.NumStmt {
+				return nil, fmt.Errorf("inconsistent NumStmt: changed from %d to %d", last.NumStmt, block.NumStmt)
+			}
+			if mode == modeSet {
+				merged[lastIndex].Count |= block.Count
+			} else {
+				merged[lastIndex].Count += block.Count
+			}
+			continue
+		}
+		merged = append(merged, block)
+	}
+
+	return merged, nil
+}
+
+func sameBlockRange(left, right ProfileBlock) bool {
+	return left.StartLine == right.StartLine &&
+		left.StartCol == right.StartCol &&
+		left.EndLine == right.EndLine &&
+		left.EndCol == right.EndCol
 }
